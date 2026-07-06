@@ -1,9 +1,6 @@
 package org.example.htwifiadmin.exception;
 
-/**
- * Thrown when the external SOAP platform cannot be reached or fails unexpectedly
- * (timeout, connection error, unrecognized SOAP fault). Mapped to HTTP 502.
- */
+/** Thrown when the SOAP platform can't be reached or fails unexpectedly. Becomes HTTP 502. */
 public class PlatformCommunicationException extends RuntimeException {
 
     private final String code;

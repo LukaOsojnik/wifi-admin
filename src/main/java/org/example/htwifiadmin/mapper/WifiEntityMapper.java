@@ -7,17 +7,13 @@ import org.example.htwifiadmin.rest.model.WifiConfiguration;
 import org.springframework.stereotype.Component;
 
 /**
- * Translates between the DB entity ({@link WifiConfigurationEntity}) and the REST model
- * ({@link WifiConfiguration}). Separate from {@link WifiConfigurationMapper} (SOAP⇄REST) so
- * each mapper owns exactly one boundary.
- *
- * <p>Enums are stored as their string wire value in the DB, so conversion is by
- * {@code getValue()} / {@code fromValue(...)}, null-guarded for the optional fields.
- * {@code lastUpdated} is set by the service at save time, not here.
+ * Converts between the DB entity and the REST model.
+ * Enums are stored as plain strings in the DB; lastUpdated is set by the service, not here.
  */
 @Component
 public class WifiEntityMapper {
 
+    /** Converts a DB row into the REST model. */
     public WifiConfiguration toRest(WifiConfigurationEntity entity) {
         if (entity == null) {
             return null;
@@ -32,6 +28,7 @@ public class WifiEntityMapper {
         return rest;
     }
 
+    /** Converts a REST config into a DB row. */
     public WifiConfigurationEntity toEntity(WifiConfiguration rest) {
         if (rest == null) {
             return null;

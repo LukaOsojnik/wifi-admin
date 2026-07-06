@@ -6,16 +6,13 @@ import org.example.htwifiadmin.rest.model.WifiConfiguration;
 import org.springframework.stereotype.Component;
 
 /**
- * Business-rule validation that OpenAPI/XSD cannot express (a cross-field rule):
- * a password is required when the encryption type uses a key.
- *
- * <p>Rule (option a): OPEN — or an omitted encryption type (defaults to OPEN) — needs no
- * password; every other type does. Note: WPA2_ENTERPRISE technically uses 802.1X credentials
- * rather than a shared password; if you want to exempt it, exclude it in {@link #requiresPassword}.
+ * Business rule the schema can't check: a password is required
+ * unless the encryption type is OPEN (or not set, which means OPEN).
  */
 @Component
 public class WifiConfigurationValidator {
 
+    /** Throws InvalidWifiConfigurationException if a required password is missing or blank. */
     public void validate(WifiConfiguration configuration) {
         if (requiresPassword(configuration.getEncryptionType())) {
             String password = configuration.getPassword();
@@ -28,8 +25,8 @@ public class WifiConfigurationValidator {
         }
     }
 
+    /** Every encryption type needs a password except OPEN (and null, which defaults to OPEN). */
     private boolean requiresPassword(EncryptionType encryptionType) {
-        // null encryptionType defaults to OPEN -> no password needed.
         return encryptionType != null && encryptionType != EncryptionType.OPEN;
     }
 }

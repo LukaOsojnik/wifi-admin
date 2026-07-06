@@ -21,17 +21,15 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.List;
 
 /**
- * HTTP Basic auth for the REST API. Stateless (no sessions) and CSRF disabled — this is a
- * service-to-service JSON API, not a browser/session app, so CSRF protection would only
- * break clients without adding value.
- *
- * <p>Credentials come from config (dev defaults); a real deployment would use a proper user
- * store / secret manager rather than a single in-memory user.
+ * Sets up HTTP Basic auth for the API. No sessions and no CSRF, because this is
+ * a JSON API called by other services, not a browser app with login pages.
+ * The single user comes from config — fine for this task, not for real production.
  */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
+    /** Every request needs Basic auth; no sessions, no CSRF. */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -43,10 +41,7 @@ public class SecurityConfig {
         return http.build();
     }
 
-    /**
-     * Allows the React dev server (a different origin) to call the API from the browser.
-     * Origin is configurable; credentials allowed so the Basic auth header is accepted.
-     */
+    /** Lets the React dev server (different port) call the API from the browser. */
     @Bean
     public CorsConfigurationSource corsConfigurationSource(
             @Value("${cors.allowed-origin:http://localhost:5173}") String allowedOrigin) {
@@ -61,6 +56,7 @@ public class SecurityConfig {
         return source;
     }
 
+    /** One in-memory user, with username/password taken from application config. */
     @Bean
     public UserDetailsService userDetailsService(
             @Value("${security.user.name}") String username,

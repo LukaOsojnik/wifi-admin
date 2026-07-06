@@ -3,10 +3,7 @@ package org.example.htwifiadmin.persistence;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-/**
- * Spring Data repository for cached WiFi configurations, keyed by cpeId (the natural PK).
- * {@code findById} / {@code save} give read-through lookup and write-through upsert for free.
- */
+/** DB access for cached WiFi configurations, looked up by cpeId. Spring Data provides all methods. */
 @Repository
 public interface WifiConfigurationRepository extends JpaRepository<WifiConfigurationEntity, String> {
 }

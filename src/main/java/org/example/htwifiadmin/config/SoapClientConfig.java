@@ -21,58 +21,52 @@ import java.io.InputStream;
 import java.util.Map;
 
 /**
- * Builds the SOAP client for the external WiFi platform.
- * The generated {@link WifiPlatformPortType} carries the contract (namespace,
- * SOAPAction, message shapes); this config only supplies the runtime concerns
- * the contract does not: which URL to call and how long to wait.
+ * Builds the SOAP client for the external WiFi platform: sets the URL,
+ * the timeouts, and a few workarounds for the mock server's quirks.
  */
 @Configuration
 public class SoapClientConfig {
 
+    /** Creates the SOAP client used everywhere else in the app. */
     @Bean
     public WifiPlatformPortType wifiPlatformPort(
             @Value("${platform.soap.endpoint}") String endpoint,
             @Value("${platform.soap.connect-timeout-ms:3000}") long connectTimeoutMs,
             @Value("${platform.soap.receive-timeout-ms:5000}") long receiveTimeoutMs) {
 
-        // 1-4: manufacture the client proxy for the generated port interface,
-        // pointed at the configured platform URL.
+        // Build a client for the generated SOAP interface, pointed at the platform URL.
         JaxWsProxyFactoryBean factory = new JaxWsProxyFactoryBean();
         factory.setServiceClass(WifiPlatformPortType.class);
         factory.setAddress(endpoint);
 
-        // Force the platform namespace to serialize with the literal prefix "tns".
-        // By default CXF emits it as a default namespace (<GetCpeIdRequest xmlns="...">),
-        // but the Mockoon template reads the request by a fixed string path
-        // (soap:Body.tns:GetCpeIdRequest.tns:cpeId), so the elements must carry "tns:".
+        // Make the XML use the "tns:" prefix explicitly — the mock server looks up
+        // request fields by that exact prefix and returns nothing without it.
         JAXBDataBinding dataBinding = new JAXBDataBinding();
         dataBinding.setNamespaceMap(Map.of("http://wifi-admin.local/platform/v1", "tns"));
         factory.setDataBinding(dataBinding);
 
         WifiPlatformPortType port = (WifiPlatformPortType) factory.create();
 
-        // Timeouts: reach under the proxy to the HTTP transport so a slow/unreachable
-        // platform fails fast (-> mappable to HTTP 502) instead of hanging the thread.
+        // Set timeouts so a slow or dead platform fails fast instead of hanging.
         Client client = ClientProxy.getClient(port);
         HTTPConduit conduit = (HTTPConduit) client.getConduit();
         HTTPClientPolicy policy = new HTTPClientPolicy();
         policy.setConnectionTimeout(connectTimeoutMs);
         policy.setReceiveTimeout(receiveTimeoutMs);
-        // CXF 4 uses the JDK HttpClient, which tries an HTTP/2 (h2c) upgrade by default.
-        // The Mockoon mock only speaks HTTP/1.1 and answers 404 to the upgrade, so pin 1.1.
+        // Stick to HTTP/1.1 — the mock server rejects CXF's default HTTP/2 upgrade attempt.
         policy.setVersion("1.1");
         conduit.setClient(policy);
 
-        // Tolerate the platform's malformed response prolog (see bug-fixes.md BUG-003).
+        // Work around the mock's invalid leading newline in responses (see bug-fixes.md BUG-003).
         client.getInInterceptors().add(leadingWhitespaceStrippingInterceptor());
 
         return port;
     }
 
     /**
-     * The mock's updateCpeId response has a leading newline before {@code <?xml?>}, which is invalid
-     * XML and makes CXF's parser fail. This RECEIVE-phase interceptor strips any leading whitespace
-     * from the response before parsing, so the client tolerates the platform's quirk.
+     * Strips whitespace from the start of every response before XML parsing.
+     * Needed because the mock's updateCpeId response starts with a newline,
+     * which is invalid XML and would otherwise crash the parser.
      */
     private AbstractPhaseInterceptor<Message> leadingWhitespaceStrippingInterceptor() {
         return new AbstractPhaseInterceptor<>(Phase.RECEIVE) {

@@ -14,13 +14,9 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 /**
- * Nightly job that refreshes the DB cache from the platform. Thin — it decides only
- * <i>when</i> (cron) and <i>which/how many</i> (the N stalest cached CPEs); the per-CPE
- * SOAP+DB work is delegated to {@link WifiService#refreshFromPlatform(String)}.
- *
- * <p>DB-driven (Option X): it refreshes CPEs already in the cache (populated by GETs), oldest
- * {@code lastUpdated} first, so entries rotate through over successive runs. It does not discover
- * never-accessed CPEs. Disabled in tests via {@code sync.enabled=false}.
+ * Nightly job that refreshes cached CPEs from the platform, oldest first.
+ * Only refreshes CPEs already in the DB (it can't discover new ones).
+ * Disabled in tests via sync.enabled=false.
  */
 @Slf4j
 @Component
@@ -38,6 +34,7 @@ public class WifiSyncScheduler {
         this.batchSize = batchSize;
     }
 
+    /** Picks the N least recently updated CPEs and refreshes each one; one failure doesn't stop the rest. */
     @Scheduled(cron = "${sync.cron}")
     public void syncStaleCpes() {
         List<WifiConfigurationEntity> batch = repository

@@ -8,13 +8,9 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 
 /**
- * JPA entity for the cached WiFi configuration (one row per CPE). Lives only behind the
- * repository/persistence boundary — never exposed to the REST or SOAP layers; the
- * {@code WifiEntityMapper} converts at the edge.
- *
- * <p>Enums are stored as their stable string value (not ordinals). The password is stored
- * as-is for this task because it must be retrievable (shown to the user, pushed to the device);
- * a real deployment would ENCRYPT it at rest (not hash — hashing is irreversible).
+ * DB table row for a cached WiFi configuration — one row per CPE.
+ * The password is stored in plain text for this task because it has to be readable back;
+ * a real deployment would encrypt it.
  */
 @Entity
 @Table(name = "wifi_configuration")

@@ -22,16 +22,8 @@ import java.time.Instant;
 import java.util.Optional;
 
 /**
- * Orchestrates the flows and owns two boundaries:
- * <ul>
- *   <li><b>SOAP</b> — builds requests, calls the platform, and translates SOAP transport/fault
- *       exceptions into domain exceptions ({@link CpeNotFoundException} 404,
- *       {@link PlatformCommunicationException} 502).</li>
- *   <li><b>DB cache</b> — GET is <i>read-through</i> (serve from DB; on miss fetch from the
- *       platform and cache); PUT is <i>write-through</i> (update the platform, then persist the
- *       confirmed config so later reads reflect the change).</li>
- * </ul>
- * It knows nothing about HTTP status codes; the exception advice maps domain exceptions to responses.
+ * Core business logic: talks to the SOAP platform, caches results in the DB,
+ * and turns SOAP errors into our own exceptions (so no SOAP details leak out).
  */
 @Slf4j
 @Service
@@ -53,7 +45,7 @@ public class WifiService {
         this.entityMapper = entityMapper;
     }
 
-    /** GET flow (read-through): serve from DB; on miss fetch from the platform and cache. */
+    /** Returns the config from the DB if we have it; otherwise asks the platform and saves the result. */
     public WifiConfiguration getWifiParameter(String cpeId) {
         Optional<WifiConfigurationEntity> cached = repository.findById(cpeId);
         if (cached.isPresent()) {
@@ -67,7 +59,7 @@ public class WifiService {
         return fromPlatform;
     }
 
-    /** PUT flow (write-through): update the platform, then persist the confirmed config. */
+    /** Validates the config, updates the platform, then saves the confirmed result in the DB. */
     public WifiConfiguration updateWifiParameter(WifiConfiguration configuration) {
         log.info("Updating WiFi parameters for cpeId={}", configuration.getCpeId());
         validator.validate(configuration);
@@ -77,17 +69,14 @@ public class WifiService {
         return confirmed;
     }
 
-    /**
-     * Force-refresh a CPE from the platform into the DB cache (used by the scheduler).
-     * Always calls the platform (bypasses the read-through DB hit) and upserts the result.
-     */
+    /** Always fetches fresh data from the platform and updates the DB. Used by the nightly sync. */
     public WifiConfiguration refreshFromPlatform(String cpeId) {
         WifiConfiguration fromPlatform = fetchFromPlatform(cpeId);
         cache(fromPlatform);
         return fromPlatform;
     }
 
-    /** SOAP getCpeID, with fault translation. */
+    /** Calls the platform's getCpeID and converts the response to our REST model. */
     private WifiConfiguration fetchFromPlatform(String cpeId) {
         GetCpeIdRequest request = new GetCpeIdRequest();
         request.setCpeId(cpeId);
@@ -99,7 +88,7 @@ public class WifiService {
         }
     }
 
-    /** SOAP updateCpeId, with fault translation. Returns the platform's confirmed config. */
+    /** Calls the platform's updateCpeId and returns the config the platform confirmed. */
     private WifiConfiguration updateOnPlatform(WifiConfiguration configuration) {
         UpdateCpeIdRequest request = new UpdateCpeIdRequest();
         request.setConfiguration(mapper.toSoap(configuration));
@@ -111,17 +100,14 @@ public class WifiService {
         }
     }
 
-    /** Upsert the configuration into the DB cache, stamping the sync time. */
+    /** Saves the config to the DB with the current time as the sync timestamp. */
     private void cache(WifiConfiguration configuration) {
         WifiConfigurationEntity entity = entityMapper.toEntity(configuration);
         entity.setLastUpdated(Instant.now());
         repository.save(entity);
     }
 
-    /**
-     * Translates a SOAP-layer failure into a domain exception: an unknown-CPE fault -> 404,
-     * anything else (timeout, connection error, other fault) -> 502.
-     */
+    /** Converts a SOAP error into our own exception: unknown CPE -> not found, anything else -> platform error. */
     private RuntimeException translate(WebServiceException e, String cpeId) {
         if (indicatesNotFound(e)) {
             return new CpeNotFoundException("CPE_NOT_FOUND", "CPE not found: " + cpeId);
@@ -131,9 +117,8 @@ public class WifiService {
     }
 
     /**
-     * Detects the platform's "CPE not found" signal. Handles a spec-compliant
-     * {@link SOAPFaultException} (real platform: faultcode/faultstring) AND the mock's
-     * malformed fault, which surfaces as a wrapped "Invalid QName in mapping: tns:NotFound".
+     * Checks whether the error means "CPE not found". Looks at the SOAP fault fields
+     * and at plain error messages, because the mock reports it in a non-standard way.
      */
     private boolean indicatesNotFound(Throwable t) {
         for (Throwable c = t; c != null; c = c.getCause()) {

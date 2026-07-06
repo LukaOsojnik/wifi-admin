@@ -8,19 +8,14 @@ import org.example.htwifiadmin.soap.WifiConfigurationType;
 import org.springframework.stereotype.Component;
 
 /**
- * Translates the WiFi configuration between the two generated worlds:
- * SOAP ({@link WifiConfigurationType}) and REST ({@link WifiConfiguration}).
- * This is the only place the two models meet — controllers/services stay on the
- * REST types, the SOAP client stays on the SOAP types.
- *
- * <p>Enums are bridged by their <em>wire value</em>, not {@code name()}: JAXB names the
- * SOAP constants {@code WPA_2_PSK} while the REST constant is {@code WPA2_PSK}, yet both
- * serialize to the same string {@code "WPA2_PSK"}. Mapping by name would fail on those.
+ * Converts between the SOAP model and the REST model.
+ * Enums are matched by their string value (not the Java constant name),
+ * because the two generated models name their constants differently.
  */
 @Component
 public class WifiConfigurationMapper {
 
-    /** SOAP -> REST (unwrap a platform response). */
+    /** Converts a SOAP config (platform response) into the REST model. */
     public WifiConfiguration toRest(WifiConfigurationType soap) {
         if (soap == null) {
             return null;
@@ -34,7 +29,7 @@ public class WifiConfigurationMapper {
         return rest;
     }
 
-    /** REST -> SOAP (wrap an incoming request). */
+    /** Converts a REST config into the SOAP model for a platform request. */
     public WifiConfigurationType toSoap(WifiConfiguration rest) {
         if (rest == null) {
             return null;
@@ -48,7 +43,7 @@ public class WifiConfigurationMapper {
         return soap;
     }
 
-    // --- enum bridges: null-guarded, mapped by wire value ---
+    // Enum conversions below: null stays null, otherwise match by string value.
 
     private WifiBand bandToRest(WifiBandType soap) {
         return soap == null ? null : WifiBand.fromValue(soap.value());

@@ -1,9 +1,6 @@
 package org.example.htwifiadmin.exception;
 
-/**
- * Thrown when the platform reports that the requested CPE does not exist.
- * Mapped to HTTP 404 by the exception advice.
- */
+/** Thrown when the platform says the requested CPE doesn't exist. Becomes HTTP 404. */
 public class CpeNotFoundException extends RuntimeException {
 
     private final String code;

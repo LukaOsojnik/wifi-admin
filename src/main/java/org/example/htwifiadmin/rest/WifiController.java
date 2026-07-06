@@ -7,9 +7,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Thin HTTP adapter implementing the generated OpenAPI contract {@link WiFiApi}.
- * Delegates the actual work to {@link WifiService} and only wraps results in HTTP
- * responses. Schema-level validation (@NotNull / @Valid) is inherited from WiFiApi.
+ * REST endpoints for the WiFi API. Just passes requests to the service
+ * and wraps the result in an HTTP response — no logic of its own.
  */
 @RestController
 public class WifiController implements WiFiApi {

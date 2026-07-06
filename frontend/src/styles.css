@@ -1,0 +1,111 @@
+:root {
+  font-family: system-ui, -apple-system, sans-serif;
+  color: #1a1a2e;
+  background: #f2f4f8;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+.card {
+  width: 100%;
+  max-width: 420px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  padding: 1.5rem;
+}
+
+h1 {
+  font-size: 1.3rem;
+  margin: 0 0 1rem;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  color: #555;
+}
+
+input,
+select {
+  padding: 0.5rem;
+  border: 1px solid #ccd;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+input:disabled {
+  background: #f0f0f4;
+  color: #888;
+}
+
+button {
+  padding: 0.55rem 0.9rem;
+  border: none;
+  border-radius: 6px;
+  background: #3b5bdb;
+  color: #fff;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+button:disabled {
+  background: #a9b3d9;
+  cursor: not-allowed;
+}
+
+button.link {
+  background: none;
+  color: #3b5bdb;
+  padding: 0;
+  font-size: 0.85rem;
+}
+
+.lookup {
+  flex-direction: row;
+  margin-bottom: 1rem;
+}
+
+.lookup input {
+  flex: 1;
+}
+
+.error {
+  background: #fde8e8;
+  color: #b91c1c;
+  padding: 0.6rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.info {
+  background: #e7f6ec;
+  color: #157347;
+  padding: 0.6rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.hint {
+  font-size: 0.8rem;
+  color: #888;
+}

@@ -3,3 +3,25 @@ package-lock.json
 .env
 *.log
 scripts/
+
+# H2 file database (local read-through cache)
+/data/
+
+# Maven build output
+target/
+
+# IDE
+.idea/
+.classpath
+.factorypath
+.project
+.settings/
+
+# OS
+.DS_Store
+
+# Working/internal docs (not part of the submission)
+CLAUDE.md
+DOKUMENTACIJA.md
+SOLUTION_GUIDE.md
+bug-fixes.md
